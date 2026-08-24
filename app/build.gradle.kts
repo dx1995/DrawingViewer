@@ -55,6 +55,9 @@ dependencies {
     // PhotoView - 图片缩放
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
 
+    // Gson - JSON序列化
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 

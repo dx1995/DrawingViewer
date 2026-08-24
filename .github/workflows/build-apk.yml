@@ -24,15 +24,20 @@ jobs:
         with:
           gradle-version: '8.2'
           cache-encryption-key: ""
+          cache-disabled: true
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+        run: |
+          gradle assembleDebug --no-daemon
+          echo "=== 查找APK ==="
+          find . -name "*.apk" -type f 2>/dev/null
+          echo "=== 构建输出目录 ==="
+          ls -la app/build/outputs/apk/debug/ 2>/dev/null || echo "debug目录不存在"
+          ls -la app/build/outputs/apk/ 2>/dev/null || echo "apk目录不存在"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/*.apk"

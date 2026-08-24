@@ -38,19 +38,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        try {
+            setContentView(R.layout.activity_main)
+            prefsManager = PrefsManager(this)
+            setupToolbar()
+            setupDrawer()
 
-        prefsManager = PrefsManager(this)
-
-        setupToolbar()
-        setupDrawer()
-
-        if (checkPermissions()) {
-            if (savedInstanceState == null) {
-                showHomeFragment()
+            if (checkPermissions()) {
+                if (savedInstanceState == null) {
+                    showHomeFragment()
+                }
+            } else {
+                requestPermissions()
             }
-        } else {
-            requestPermissions()
+        } catch (e: Exception) {
+            Toast.makeText(this, "初始化失败: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -106,21 +108,28 @@ class MainActivity : AppCompatActivity() {
     // ========== 权限相关 ==========
 
     private fun checkPermissions(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            val readPermission = ContextCompat.checkSelfPermission(
-                this, Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-            readPermission
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        } catch (e: Exception) {
+            false
         }
     }
 
     private fun hasManageStoragePermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Environment.isExternalStorageManager()
-        } else {
-            true
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Environment.isExternalStorageManager()
+            } else {
+                true
+            }
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -131,8 +140,12 @@ class MainActivity : AppCompatActivity() {
                 intent.data = android.net.Uri.parse("package:$packageName")
                 startActivity(intent)
             } catch (e: Exception) {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                startActivity(intent)
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    startActivity(intent)
+                } catch (e2: Exception) {
+                    Toast.makeText(this, "请在设置中手动授予存储权限", Toast.LENGTH_LONG).show()
+                }
             }
             Toast.makeText(this, "请授予\"所有文件访问\"权限", Toast.LENGTH_LONG).show()
         } else {
@@ -144,53 +157,76 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (checkPermissions()) {
-            val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-            if (currentFragment == null) {
-                showHomeFragment()
+        try {
+            if (checkPermissions()) {
+                val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+                if (currentFragment == null) {
+                    showHomeFragment()
+                }
             }
+        } catch (e: Exception) {
+            // 忽略
         }
     }
 
     // ========== Fragment 切换 ==========
 
     private fun showHomeFragment() {
-        val folder = FileManager.getDefaultDrawingFolder()
-        val fragment = FolderFragment.newInstance(folder.absolutePath, true)
-        switchFragmentAsRoot(fragment, getString(R.string.home))
-        navigationView.setCheckedItem(R.id.nav_home)
+        try {
+            val folder = FileManager.getDefaultDrawingFolder()
+            val fragment = FolderFragment.newInstance(folder.absolutePath, true)
+            switchFragmentAsRoot(fragment, getString(R.string.home))
+            navigationView.setCheckedItem(R.id.nav_home)
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showFavoritesFragment() {
-        val fragment = FavoritesFragment.newInstance()
-        switchFragmentAsRoot(fragment, getString(R.string.favorites))
-        navigationView.setCheckedItem(R.id.nav_favorites)
+        try {
+            val fragment = FavoritesFragment.newInstance()
+            switchFragmentAsRoot(fragment, getString(R.string.favorites))
+            navigationView.setCheckedItem(R.id.nav_favorites)
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showRecentFragment() {
-        val fragment = RecentFragment.newInstance()
-        switchFragmentAsRoot(fragment, getString(R.string.recent))
-        navigationView.setCheckedItem(R.id.nav_recent)
+        try {
+            val fragment = RecentFragment.newInstance()
+            switchFragmentAsRoot(fragment, getString(R.string.recent))
+            navigationView.setCheckedItem(R.id.nav_recent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showAllImagesFragment() {
-        val fragment = AllImagesFragment.newInstance()
-        switchFragmentAsRoot(fragment, getString(R.string.all_drawings))
-        navigationView.setCheckedItem(R.id.nav_all)
+        try {
+            val fragment = AllImagesFragment.newInstance()
+            switchFragmentAsRoot(fragment, getString(R.string.all_drawings))
+            navigationView.setCheckedItem(R.id.nav_all)
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showSearchFragment() {
-        val fragment = SearchFragment.newInstance()
-        switchFragment(fragment, getString(R.string.search))
+        try {
+            val fragment = SearchFragment.newInstance()
+            switchFragment(fragment, getString(R.string.search))
+        } catch (e: Exception) {
+            Toast.makeText(this, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // 作为根页面切换（清空返回栈）
     private fun switchFragmentAsRoot(fragment: Fragment, title: String) {
-        // 清空返回栈
         supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
-            .commit()
+            .commitAllowingStateLoss()
         supportActionBar?.title = title
     }
 
@@ -199,47 +235,55 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
             .addToBackStack(null)
-            .commit()
+            .commitAllowingStateLoss()
         supportActionBar?.title = title
     }
 
     fun navigateToFolder(folderPath: String) {
-        val fragment = FolderFragment.newInstance(folderPath, false)
-        val folderName = File(folderPath).name
-        switchFragment(fragment, folderName)
+        try {
+            val fragment = FolderFragment.newInstance(folderPath, false)
+            val folderName = File(folderPath).name
+            switchFragment(fragment, folderName)
+        } catch (e: Exception) {
+            Toast.makeText(this, "打开失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun openImageViewer(images: List<FileItem>, position: Int) {
-        val paths = images.map { it.path }.toTypedArray()
-        val intent = Intent(this, ImageViewerActivity::class.java).apply {
-            putExtra(ImageViewerActivity.EXTRA_IMAGE_PATHS, paths)
-            putExtra(ImageViewerActivity.EXTRA_POSITION, position)
+        try {
+            val paths = images.map { it.path }.toTypedArray()
+            val intent = Intent(this, ImageViewerActivity::class.java).apply {
+                putExtra(ImageViewerActivity.EXTRA_IMAGE_PATHS, paths)
+                putExtra(ImageViewerActivity.EXTRA_POSITION, position)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "打开失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-        startActivity(intent)
     }
 
     override fun onBackPressed() {
-        if (drawerLayout.isOpen) {
-            drawerLayout.closeDrawers()
-        } else if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStack()
-            // 延迟获取当前 Fragment，确保回退完成
-            supportFragmentManager.addOnBackStackChangedListener(object : androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
-                override fun onBackStackChanged() {
-                    val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-                    if (fragment is FolderFragment) {
-                        supportActionBar?.title = fragment.getTitle()
-                    } else if (fragment is FavoritesFragment) {
-                        supportActionBar?.title = getString(R.string.favorites)
-                    } else if (fragment is RecentFragment) {
-                        supportActionBar?.title = getString(R.string.recent)
-                    } else if (fragment is AllImagesFragment) {
-                        supportActionBar?.title = getString(R.string.all_drawings)
+        try {
+            if (drawerLayout.isOpen) {
+                drawerLayout.closeDrawers()
+            } else if (supportFragmentManager.backStackEntryCount > 0) {
+                supportFragmentManager.popBackStack()
+                supportFragmentManager.addOnBackStackChangedListener(object : androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
+                    override fun onBackStackChanged() {
+                        val fragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+                        when (fragment) {
+                            is FolderFragment -> supportActionBar?.title = fragment.getTitle()
+                            is FavoritesFragment -> supportActionBar?.title = getString(R.string.favorites)
+                            is RecentFragment -> supportActionBar?.title = getString(R.string.recent)
+                            is AllImagesFragment -> supportActionBar?.title = getString(R.string.all_drawings)
+                        }
+                        supportFragmentManager.removeOnBackStackChangedListener(this)
                     }
-                    supportFragmentManager.removeOnBackStackChangedListener(this)
-                }
-            })
-        } else {
+                })
+            } else {
+                super.onBackPressed()
+            }
+        } catch (e: Exception) {
             super.onBackPressed()
         }
     }

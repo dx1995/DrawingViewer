@@ -9,10 +9,12 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
@@ -38,12 +40,36 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         try {
             setContentView(R.layout.activity_main)
-            prefsManager = PrefsManager(this)
-            setupToolbar()
-            setupDrawer()
+        } catch (e: Throwable) {
+            showError("界面加载失败", e)
+            return
+        }
 
+        try {
+            prefsManager = PrefsManager(this)
+        } catch (e: Throwable) {
+            showError("偏好设置初始化失败", e)
+            return
+        }
+
+        try {
+            setupToolbar()
+        } catch (e: Throwable) {
+            showError("工具栏初始化失败", e)
+            return
+        }
+
+        try {
+            setupDrawer()
+        } catch (e: Throwable) {
+            showError("侧边栏初始化失败", e)
+            return
+        }
+
+        try {
             if (checkPermissions()) {
                 if (savedInstanceState == null) {
                     showHomeFragment()
@@ -51,13 +77,24 @@ class MainActivity : AppCompatActivity() {
             } else {
                 requestPermissions()
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "初始化失败: ${e.message}", Toast.LENGTH_LONG).show()
+        } catch (e: Throwable) {
+            showError("权限检查失败", e)
         }
     }
 
+    private fun showError(stage: String, e: Throwable) {
+        val msg = "$stage\n${e.javaClass.simpleName}: ${e.message}\n\n${e.stackTrace.take(5).joinToString("\n") { it.toString() }}"
+        val tv = TextView(this).apply {
+            text = msg
+            setPadding(32, 32, 32, 32)
+            textSize = 12f
+        }
+        setContentView(tv)
+        Toast.makeText(this, stage, Toast.LENGTH_LONG).show()
+    }
+
     private fun setupToolbar() {
-        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_menu)
